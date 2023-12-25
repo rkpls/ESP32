@@ -39,4 +39,3 @@ s = CCS811.CCS811(i2c=i2c_ccs)
 spi = SoftSPI(sck=Pin(23), mosi=Pin(22), miso=Pin(15), baudrate=400000)
 oled = sh1106.SH1106_SPI(128, 64, spi, Pin(18), Pin(15), Pin(19))
 
-
