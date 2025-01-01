@@ -1,28 +1,16 @@
-import network
 import socket
 import time
 from machine import Pin
-from NeoPixel import NeoPixel  # Use your custom NeoPixel class
-
-# Wi-Fi Setup
-SSID = "YourHotspotSSID"
-PASSWORD = "YourHotspotPassword"
+from neopixel_custom import NeoPixel
+import wifisetup
 
 # NeoPixel Setup
-NUM_LEDS = 32 #led count currently testing
+NUM_LEDS = 32  # LED count currently testing
 LED_PIN_1 = Pin(2)
 LED_PIN_2 = Pin(4)
 
 strip1 = NeoPixel(LED_PIN_1, NUM_LEDS)
 strip2 = NeoPixel(LED_PIN_2, NUM_LEDS)
-
-# Access Point (Fallback)
-def create_access_point():
-    ap = network.WLAN(network.AP_IF)
-    ap.active(True)
-    ap.config(essid="ESP-LED-Control", authmode=network.AUTH_WPA_WPA2_PSK, password="12345678")
-    print("Access Point Created: ESP-LED-Control")
-    return ap.ifconfig()[0]
 
 # Web Server
 def start_server(ip):
@@ -40,11 +28,11 @@ def start_server(ip):
 
         # Parse request
         if "/animation1" in request:
-            run_animation(strip1, strip2, color_wipe)
+            color_wipe(strip1, strip2, (0, 0, 255))  # Blue
         elif "/animation2" in request:
-            run_animation(strip1, strip2, rainbow_cycle)
+            rainbow_cycle(strip1, strip2)
         elif "/animation3" in request:
-            run_animation(strip1, strip2, pulse)
+            pulse(strip1, strip2, (0, 255, 0))  # Green
 
         response = generate_html()
         cl.send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n")
@@ -58,15 +46,17 @@ def generate_html():
 <head>
     <title>ESP LED Control</title>
     <style>
-        body { font-family: Arial; text-align: center; margin-top: 50px; }
-        button { font-size: 20px; padding: 10px; margin: 10px; }
+        body { font-family: Arial, sans-serif; background-color: #121212; color: #ffffff; text-align: center; margin: 0; padding: 20px; }
+        h1 { font-size: 2.5em; margin-bottom: 20px; }
+        button { font-size: 1.5em; padding: 15px; margin: 10px; width: 200px; background-color: #1f1f1f; color: #ffffff; border: 2px solid #ffffff; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #333333; }
     </style>
 </head>
 <body>
     <h1>ESP LED Control</h1>
-    <button onclick="location.href='/animation1'">Animation 1</button>
-    <button onclick="location.href='/animation2'">Animation 2</button>
-    <button onclick="location.href='/animation3'">Animation 3</button>
+    <button onclick="location.href='/animation1'">Animation 1</button><br>
+    <button onclick="location.href='/animation2'">Animation 2</button><br>
+    <button onclick="location.href='/animation3'">Animation 3</button><br>
 </body>
 </html>
 """
@@ -121,5 +111,15 @@ def wheel(pos):
         pos -= 170
         return (0, pos * 3, 255 - pos * 3)
 
-ip = create_access_point()
+# Main
+
+wlan = wifisetup.getConnection()
+
+if wlan is None:
+    print("[WifiMgr] Could not initialize the network connection.")
+    while True:
+        pass
+ip = wlan.ifconfig()[0]
+print(f"[WifiMgr] Network initialized. IP Address: {ip}")
 start_server(ip)
+
