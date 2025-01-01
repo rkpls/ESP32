@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP LED Control</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <script>
+        const broker = "ws://<ESP_IP>:1883"; // Replace <ESP_IP> with the ESP's IP
+        const client = mqtt.connect(broker);
+
+        client.on("connect", function () {
+            console.log("Connected to MQTT Broker");
+        });
+
+        function setAnimation(animation) {
+            client.publish("led/animation", animation);
+        }
+
+        function setBrightness(value) {
+            client.publish("led/brightness", value);
+        }
+    </script>
+</head>
+<body style="font-family: Arial; background-color: #121212; color: white; text-align: center;">
+    <h1>ESP LED Control</h1>
+    <button onclick="setAnimation('off')">Turn Off LEDs</button><br>
+    <button onclick="setAnimation('color_wipe')">Animation 1</button><br>
+    <button onclick="setAnimation('rainbow_cycle')">Animation 2</button><br>
+    <button onclick="setAnimation('fps_test')">FPS Test</button><br>
+    <label for="brightness">Brightness:</label>
+    <input type="range" min="0" max="1" step="0.01" oninput="setBrightness(this.value)">
+</body>
+</html>
