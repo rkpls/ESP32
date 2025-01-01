@@ -1,13 +1,11 @@
 from mqtt_simple import MQTTClient
-import time
+from mqtt_broker import MQTTBroker
 import json
+import time
 from machine import Pin
 from neopixel_custom import NeoPixel
+import _thread
 import wifisetup
-
-# MQTT Setup
-CLIENT_ID = "ESP32_LED_Controller"
-TOPIC = "esp/control"
 
 # NeoPixel Setup
 NUM_LEDS = 32
@@ -19,9 +17,9 @@ strip2 = NeoPixel(LED_PIN_2, NUM_LEDS)
 
 # Global state
 current_animation = "off"
-global_brightness = 1.0
+global_brightness = 0.1
 
-
+# Functions for MQTT control
 def set_brightness(value):
     global global_brightness
     global_brightness = max(0.0, min(float(value), 1.0))  # Clamp between 0 and 1
@@ -52,12 +50,16 @@ def animation_handler(animation):
 def message_callback(topic, msg):
     global current_animation
 
+    print(f"Received MQTT message on topic '{topic.decode()}': {msg.decode()}")
+
     try:
         # Parse JSON message
         data = json.loads(msg)
         if "brightness" in data:
+            print(f"Setting brightness to {data['brightness']}")
             set_brightness(data["brightness"])
         if "animation" in data:
+            print(f"Setting animation to {data['animation']}")
             current_animation = data["animation"]
     except Exception as e:
         print(f"Failed to parse message: {e}")
@@ -111,38 +113,43 @@ def wheel(pos):
         return (0, pos * 3, 255 - pos * 3)
 
 
-# Main MQTT Loop
+# Start MQTT Broker
+def start_mqtt_broker():
+    broker = MQTTBroker()
+    broker.start()
+
+
+# Start MQTT Client
 def mqtt_loop(broker_ip):
-    client = MQTTClient(CLIENT_ID, broker_ip)
+    client = MQTTClient("ESP32_Client", broker_ip)
     client.set_callback(message_callback)
     client.connect()
-    client.subscribe(TOPIC)
-    print(f"Connected to MQTT broker at {broker_ip}, subscribed to {TOPIC}")
+    client.subscribe("esp/control")
+    print(f"Connected to MQTT broker at {broker_ip}, subscribed to 'esp/control'")
 
     while True:
-        client.check_msg()  # Check for new messages
-        animation_handler(current_animation)  # Handle current animation
+        client.check_msg()
+        animation_handler(current_animation)
 
 
-# Wi-Fi Connection
+# Main Function
 def main():
-    wlan = wifisetup.getConnection()  # Use your existing Wi-Fi setup
+    # Connect to Wi-Fi
+    wlan = wifisetup.getConnection()
     if wlan is None:
         print("[WifiMgr] Could not initialize the network connection.")
         while True:
             pass
-
+        
     broker_ip = wlan.ifconfig()[0]
     print(f"[WifiMgr] Connected to Wi-Fi. IP Address: {broker_ip}")
 
-    # Start MQTT loop
-    try:
-        mqtt_loop(broker_ip)
-    except KeyboardInterrupt:
-        print("Exiting...")
+    print("[Main] Starting MQTT broker...")
+    _thread.start_new_thread(start_mqtt_broker, ())
+    time.sleep(1)
+
+    mqtt_loop(broker_ip)
 
 
-# Run the main function
-if __name__ == "__main__":
-    main()
+main()
 

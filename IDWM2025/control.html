@@ -1,32 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESP LED Control</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
-    <script>
-        const broker = "ws://<ESP_IP>:1883"; // Replace <ESP_IP> with the ESP's IP
-        const client = mqtt.connect(broker);
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        button {
+            font-size: 1.5em;
+            padding: 15px;
+            margin: 10px;
+            width: 200px;
+            background-color: #1f1f1f;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #333333;
+        }
+        input[type="range"] {
+            width: 50%;
+            margin: 20px auto;
+        }
+        label {
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <h1>ESP LED Control</h1>
 
-        client.on("connect", function () {
-            console.log("Connected to MQTT Broker");
+    <!-- Brightness Slider -->
+    <label for="brightness">Brightness</label>
+    <input type="range" id="brightness" min="0" max="1" step="0.01" value="0.1" onchange="sendBrightness()"><br>
+
+    <!-- Animation Buttons -->
+    <button onclick="sendAnimation('off')">Turn Off</button><br>
+    <button onclick="sendAnimation('color_wipe')">Color Wipe</button><br>
+    <button onclick="sendAnimation('rainbow_cycle')">Rainbow Cycle</button><br>
+    <button onclick="sendAnimation('fps_test')">FPS Test</button><br>
+
+    <script>
+        // Connect to the MQTT broker on the ESP
+        const BROKER_IP = "ws://192.168.156.165:8080";
+        const client = mqtt.connect(BROKER_IP);
+
+        client.on("connect", () => {
+            console.log("Connected to MQTT broker");
         });
 
-        function setAnimation(animation) {
-            client.publish("led/animation", animation);
+        client.on("error", (err) => {
+            console.error("Connection error:", err);
+        });
+
+        // Send brightness level via MQTT
+        function sendBrightness() {
+            const brightness = document.getElementById("brightness").value;
+            const message = JSON.stringify({ brightness: parseFloat(brightness) });
+            client.publish("esp/control", message);
+            console.log("Sent brightness:", message);
         }
 
-        function setBrightness(value) {
-            client.publish("led/brightness", value);
+        // Send selected animation via MQTT
+        function sendAnimation(animation) {
+            const message = JSON.stringify({ animation });
+            client.publish("esp/control", message);
+            console.log("Sent animation:", message);
         }
     </script>
-</head>
-<body style="font-family: Arial; background-color: #121212; color: white; text-align: center;">
-    <h1>ESP LED Control</h1>
-    <button onclick="setAnimation('off')">Turn Off LEDs</button><br>
-    <button onclick="setAnimation('color_wipe')">Animation 1</button><br>
-    <button onclick="setAnimation('rainbow_cycle')">Animation 2</button><br>
-    <button onclick="setAnimation('fps_test')">FPS Test</button><br>
-    <label for="brightness">Brightness:</label>
-    <input type="range" min="0" max="1" step="0.01" oninput="setBrightness(this.value)">
 </body>
 </html>
