@@ -15,8 +15,8 @@ i2c = SoftI2C(sda=i2c_sda, scl=i2c_scl)
 
 sensor = ahtx0.AHT10(i2c)
 
-ssid = 'Zenbook-14-Pals'
-password = 'Micropython'
+ssid = 'zzz'
+password = 'fck_afd'
 MQTT_SERVER = '192.168.178.1'
 CLIENT_ID = ubinascii.hexlify(machine.unique_id())
 MQTT_TOPIC = 'PLS'

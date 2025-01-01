@@ -32,8 +32,8 @@ I2 = []
 I3 = []
 
 # ---------- CONNECT ----------
-ssid = 'Telekom_Pals'
-password = 'fck_afd!'
+ssid = 'zzz'
+password = 'fck_afd'
 wlan = network.WLAN(network.STA_IF)
 MQTT_SERVER = '192.168.2.45'
 CLIENT_ID = hexlify(unique_id())
